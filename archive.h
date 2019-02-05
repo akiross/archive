@@ -170,6 +170,16 @@ class Archive
                 return *this;
             }
 
+        template <class T>
+            const Archive& operator&(const std::pair<T *, size_t> &v) const
+            {
+                uint32_t len = v.second;
+                *this & len;
+                for(size_t i = 0; i < v.second; ++i)
+                    *this & v.first[i];
+                return *this;
+            }
+
     public:
         template <class T>
             Archive& operator&(T& v)
@@ -234,6 +244,33 @@ class Archive
         SERIALIZER_FOR_POD(float);
         SERIALIZER_FOR_POD(double);
 
+        // De-serialization specific for std::vector
+        template <class T>
+        Archive& operator&(std::vector<T>& v)
+        {
+            uint32_t len;
+            *this & len;
+			v.reserve(len); // Allocate once
+			v.clear(); // Make sure it's empty (capacity remains unchanged)
+            for (uint32_t i = 0; i < len; ++i)
+            {
+                T value;
+                *this & value;
+                v.push_back(value);
+            }
+            return *this;
+        }
+
+		// Serialization specific for std::vector
+        template <class T>
+        const Archive& operator&(const std::vector<T>& v) const
+        {
+            uint32_t len = v.size();
+            *this & len;
+            for (auto it = v.begin(); it != v.end(); ++it)
+				*this & *it;
+            return *this;
+        }
 
 #define SERIALIZER_FOR_STL(type) \
         template <class T> \
@@ -283,7 +320,6 @@ class Archive
             return *this; \
         }
 
-        SERIALIZER_FOR_STL(std::vector);
         SERIALIZER_FOR_STL(std::deque);
         SERIALIZER_FOR_STL(std::list);
         SERIALIZER_FOR_STL(std::set);

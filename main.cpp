@@ -73,14 +73,31 @@ void Test(const T& testValue)
     assert(testValue == value);
 }
 
-    template <class T, size_t N>
+template <class T, size_t N>
 void TestArray(T (&value)[N])
 {
     std::stringstream s;
     Archive<std::stringstream> a(s);
 
     a << value;
-    a >> value;
+	T dest[N];
+    a >> dest;
+	for (size_t i = 0; i < N; i++)
+		assert(value[i] == dest[i]);
+}
+
+template <class T>
+void TestCArray(T *value, size_t N)
+{
+    std::stringstream s;
+    Archive<std::stringstream> a(s);
+
+    a << std::make_pair(value, N);
+	std::vector<T> dest;
+    a >> dest;
+	assert(N == dest.size());
+	for (size_t i = 0; i < N; i++)
+		assert(value[i] == dest[i]);
 }
 
 void TestFile()
@@ -144,6 +161,8 @@ int main()
     std::cout << "Array..." << std::endl;
     int ii[] = {1, 2, 3, 4, 5, 6};
     TestArray(ii);
+    std::cout << "C-Array..." << std::endl;
+	TestCArray(ii, 6);
 
     // STL
     std::cout << "STL..." << std::endl;
